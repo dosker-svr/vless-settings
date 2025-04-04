@@ -1,6 +1,6 @@
 ### /etc/config/network
 ```sh
-config interface 'tun0'
+config interface 'xray'
         option device 'tun0'
         option proto 'static'
         option ipaddr '172.16.250.1'
@@ -11,7 +11,7 @@ config interface 'tun0'
 ### /etc/config/firewall
 ```sh
 config zone
-        option name 'tun'
+        option name 'xray'
         option forward 'REJECT'
         option output 'ACCEPT'
         option input 'REJECT'
@@ -26,6 +26,8 @@ config forwarding
         option src 'lan'
         option family 'ipv4'
 ```
+Рестартуем службу:
+$ service network restart
 
 ### /etc/init.d/tun2socks
 
@@ -60,9 +62,82 @@ start_service() {
         procd_close_instance
 }
 ```
+
 Далее:
 ```sh
 chmod +x /etc/init.d/tun2socks
 ln -s ../init.d/tun2socks /etc/rc.d/S40tun2socks
 service tun2socks start
 ```
+
+
+## xray
+### /etc/xray/config.json
+```sh
+{
+    "log": {
+      "loglevel": "warning"
+    },
+    "routing": {
+      "domainStrategy": "IPIfNonMatch",
+      "rules": [
+        {
+          "type": "field",
+          "port": "0-65535",
+          "outboundTag": "proxy"
+        }
+      ]
+    },
+    "inbounds": [
+        {
+            "listen": "127.0.0.1",
+            "port": "2080",
+            "protocol": "socks",
+            "settings": {
+              "auth": "noauth",
+              "udp": true,
+              "ip": "127.0.0.1"
+            }
+      }
+    ],
+  "outbounds": [
+    {
+        "tag": "proxy",
+        "protocol": "vless",
+        "settings": {
+            "vnext": [
+                {
+                    "address": "",
+                    "port": 443,
+                    "users": [
+                        {
+                            "id": "",
+                            "flow": "",
+                            "encryption": "none",
+                            "level": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        "streamSettings": {
+            "network": "tcp",
+            "security": "reality",
+            "realitySettings": {
+                "publicKey": "",
+                "fingerprint": "chrome",
+                "serverName": "mirror.timeweb.ru",
+                "shortId": "",
+                "spiderX": "/"
+            }
+        }
+    },
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    }
+  ]
+}
+```
+
+### /etc/config/xray
