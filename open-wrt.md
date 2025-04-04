@@ -1,3 +1,32 @@
+### /etc/config/network
+```sh
+config interface 'tun0'
+        option device 'tun0'
+        option proto 'static'
+        option ipaddr '172.16.250.1'
+        option netmask '255.255.255.0'
+
+```
+
+### /etc/config/firewall
+```sh
+config zone
+        option name 'tun'
+        option forward 'REJECT'
+        option output 'ACCEPT'
+        option input 'REJECT'
+        option masq '1'
+        option mtu_fix '1'
+        option device 'tun0'
+        option family 'ipv4'
+
+config forwarding
+        option name 'lan-tun'
+        option dest 'tun'
+        option src 'lan'
+        option family 'ipv4'
+```
+
 ### /etc/init.d/tun2socks
 
 ```sh
@@ -31,4 +60,9 @@ start_service() {
         procd_close_instance
 }
 ```
-
+Далее:
+```sh
+chmod +x /etc/init.d/tun2socks
+ln -s ../init.d/tun2socks /etc/rc.d/S40tun2socks
+service tun2socks start
+```
